@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Creator Post Studio AH — Publish</title>
+<meta name="description" content="Preview, review and publish TikTok videos with explicit confirmation.">
+<style>
+body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;max-width:880px;margin:0 auto;padding:28px 18px;color:#111;line-height:1.6}
+h1{font-size:28px;margin:0 0 6px}.muted{color:#555;font-size:14px}
+.card{border:1px solid #e5e5e5;border-radius:12px;padding:18px;margin:14px 0}
+label{display:block;font-weight:600;margin:12px 0 4px}
+input[type=text],textarea,select{width:100%;padding:10px;border:1px solid #ccc;border-radius:8px;font-size:15px;box-sizing:border-box}
+textarea{min-height:70px}
+.row{display:flex;gap:14px;flex-wrap:wrap}.row>div{flex:1;min-width:180px}
+.toggle{display:flex;align-items:center;gap:8px;margin:8px 0}.toggle input{width:18px;height:18px}
+.btn{display:inline-block;background:#111;color:#fff;padding:11px 18px;border-radius:8px;border:0;cursor:pointer;font-size:15px}
+.btn.secondary{background:#fff;color:#111;border:1px solid #ccc}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.preview{background:#fafafa;border:1px dashed #ccc;border-radius:10px;padding:14px;margin-top:12px}
+.notice{background:#fff8e1;border:1px solid #f0d98c;border-radius:10px;padding:12px 14px;font-size:14px}
+video{width:100%;max-height:360px;background:#000;border-radius:10px}
+.badge{display:inline-block;background:#eef6ff;border:1px solid #cfe4ff;padding:2px 8px;border-radius:999px;font-size:13px}
+footer{margin-top:28px;color:#666;font-size:13px}
+</style>
+</head>
+<body>
+<header>
+<h1>Creator Post Studio AH — Publish</h1>
+<p class="muted">Preview, review and publish. Nothing is posted without your explicit confirmation.</p>
+<p><a href="./">← Back to home</a> &nbsp; <a href="./terms.html">Terms</a> · <a href="./privacy.html">Privacy</a></p>
+</header>
+
+<div class="card" id="loginCard">
+<h2 style="margin:0 0 6px">1. Log in with TikTok</h2>
+<p class="muted">Uses TikTok Login Kit. Scopes requested: <span class="badge">user.info.basic</span> <span class="badge">video.list</span> <span class="badge">video.upload</span> <span class="badge">video.publish</span></p>
+<div id="loggedOut">
+<p>Creator nickname will appear here after you log in (from creator_info via Display API).</p>
+<button class="btn" id="loginBtn" type="button">Log in with TikTok</button>
+<p class="muted">Demo: This button shows the login step. In production it redirects to TikTok OAuth with your Client Key and Redirect URI. No secrets are stored in this page.</p>
+</div>
+<div id="loggedIn" style="display:none">
+<p>Logged in as: <strong id="creatorName">@creator_demo</strong> <span class="badge">Connected</span></p>
+<p class="muted">Profile and video list come from Display API (video.list). You can disconnect at any time.</p>
+<button class="btn secondary" id="logoutBtn" type="button">Disconnect</button>
+</div>
+</div>
+
+<div class="card">
+<h2 style="margin:0 0 6px">2. Upload video</h2>
+<label for="videoFile">Choose video file (MP4 / MOV)</label>
+<input type="file" id="videoFile" accept="video/mp4,video/quicktime,video/*">
+<video id="videoPreview" controls playsinline style="display:none;margin-top:12px"></video>
+<p class="muted" id="videoHint">No video selected yet.</p>
+</div>
+
+<div class="card">
+<h2 style="margin:0 0 6px">3. Post details</h2>
+<label for="title">Title / Caption</label>
+<textarea id="title" placeholder="Write your caption…"></textarea>
+
+<div class="row">
+<div>
+<label for="privacy">Privacy level</label>
+<select id="privacy">
+<option value="PUBLIC">Public — Everyone can view</option>
+<option value="FRIENDS">Friends — Friends only</option>
+<option value="SELF_ONLY">Private — Only me (SELF_ONLY)</option>
+</select>
+</div>
+<div>
+<label for="mode">Publish mode</label>
+<select id="mode">
+<option value="DIRECT_POST">Direct Post — Publish directly to TikTok</option>
+<option value="UPLOAD_TO_INBOX">Upload to Inbox — Save as draft in TikTok</option>
+</select>
+</div>
+</div>
+
+<label>Duet &amp; Stitch</label>
+<div class="toggle"><input type="checkbox" id="allowDuet" checked> <span>Allow Duet</span></div>
+<div class="toggle"><input type="checkbox" id="allowStitch" checked> <span>Allow Stitch</span></div>
+
+<label>Commercial content</label>
+<div class="toggle"><input type="checkbox" id="isCommercial"> <span>This content is branded / commercial content — disclose commercial content</span></div>
+<p class="muted">If checked, the post is marked as branded content per TikTok commercial content rules.</p>
+
+<label>Music</label>
+<div class="toggle"><input type="checkbox" id="musicConsent"> <span>I confirm I have the right to use the music / audio in this video, and I consent to TikTok’s music terms for this post.</span></div>
+
+<label>Schedule (optional)</label>
+<div class="row"><div><input type="text" id="schedule" placeholder="Leave empty to publish now, e.g. 2026-10-20 18:00"></div></div>
+</div>
+
+<div class="card">
+<h2 style="margin:0 0 6px">4. Preview &amp; confirm</h2>
+<div class="notice">Review everything below before publishing. The video will <strong>not</strong> be posted until you click “Confirm &amp; Publish”.</div>
+<div class="preview" id="previewBox">
+<p><strong>Creator:</strong> <span id="pCreator">@creator_demo</span></p>
+<p><strong>Title:</strong> <span id="pTitle">(empty)</span></p>
+<p><strong>Privacy:</strong> <span id="pPrivacy">PUBLIC</span> &nbsp; <strong>Mode:</strong> <span id="pMode">DIRECT_POST</span></p>
+<p><strong>Duet:</strong> <span id="pDuet">On</span> &nbsp; <strong>Stitch:</strong> <span id="pStitch">On</span></p>
+<p><strong>Commercial:</strong> <span id="pCommercial">No</span> &nbsp; <strong>Music consent:</strong> <span id="pMusic">Not confirmed</span></p>
+<p><strong>Schedule:</strong> <span id="pSchedule">Publish now</span></p>
+</div>
+<div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">
+<button class="btn" id="publishBtn" type="button" disabled>Confirm &amp; Publish</button>
+<button class="btn secondary" id="draftBtn" type="button">Save as Draft (Upload to Inbox)</button>
+</div>
+<p class="muted" id="statusLine">Status: Not published. Choose a video and confirm music consent to enable Publish.</p>
+</div>
+
+<div class="card">
+<h2 style="margin:0 0 6px">Publishing status</h2>
+<p id="statusBox" class="muted">No publish attempt yet. After you confirm, the status (publish_id / draft / error) will appear here. This page never posts automatically.</p>
+</div>
+
+<footer>
+<p>Creator Post Studio AH — A creator publishing tool. Not affiliated with TikTok. See <a href="./terms.html">Terms</a> and <a href="./privacy.html">Privacy</a>.</p>
+</footer>
+
+<script>
+const $ = id => document.getElementById(id);
+const loginBtn=$('loginBtn'), logoutBtn=$('logoutBtn'), loggedOut=$('loggedOut'), loggedIn=$('loggedIn'), creatorName=$('creatorName');
+loginBtn.addEventListener('click', ()=>{
+  // Demo login: in production this redirects to TikTok OAuth. For demo video, simulate the logged-in state.
+  loggedOut.style.display='none'; loggedIn.style.display='block';
+  creatorName.textContent='@creator_demo';
+  $('pCreator').textContent='@creator_demo';
+  updatePublishState();
+});
+logoutBtn.addEventListener('click', ()=>{
+  loggedIn.style.display='none'; loggedOut.style.display='block';
+  $('pCreator').textContent='@creator_demo';
+  updatePublishState();
+});
+$('videoFile').addEventListener('change', e=>{
+  const f=e.target.files[0];
+  const v=$('videoPreview');
+  if(f){ v.src=URL.createObjectURL(f); v.style.display='block'; $('videoHint').textContent='Selected: '+f.name; }
+  else { v.style.display='none'; $('videoHint').textContent='No video selected yet.'; }
+  updatePublishState();
+});
+function syncPreview(){
+  $('pTitle').textContent = $('title').value.trim() || '(empty)';
+  $('pPrivacy').textContent = $('privacy').value;
+  $('pMode').textContent = $('mode').value;
+  $('pDuet').textContent = $('allowDuet').checked ? 'On' : 'Off';
+  $('pStitch').textContent = $('allowStitch').checked ? 'On' : 'Off';
+  $('pCommercial').textContent = $('isCommercial').checked ? 'Yes — Branded content disclosed' : 'No';
+  $('pMusic').textContent = $('musicConsent').checked ? 'Confirmed' : 'Not confirmed';
+  $('pSchedule').textContent = $('schedule').value.trim() || 'Publish now';
+}
+function updatePublishState(){
+  syncPreview();
+  const hasVideo = !!$('videoFile').files.length;
+  const musicOk = $('musicConsent').checked;
+  const titleOk = $('title').value.trim().length>0;
+  const canPublish = hasVideo && musicOk && titleOk;
+  $('publishBtn').disabled = !canPublish;
+  $('statusLine').textContent = canPublish ? 'Status: Ready to publish — click Confirm & Publish to post.' : 'Status: Not published. Choose a video, add a title, and confirm music consent to enable Publish.';
+}
+['title','privacy','mode','allowDuet','allowStitch','isCommercial','musicConsent','schedule'].forEach(id=>{
+  $(id).addEventListener('input', updatePublishState);
+  $(id).addEventListener('change', updatePublishState);
+});
+$('publishBtn').addEventListener('click', ()=>{
+  const mode=$('mode').value;
+  $('statusBox').textContent = mode==='DIRECT_POST'
+    ? 'Published (demo): Direct Post confirmed. In production this calls Content Posting API with video.publish and returns a publish_id. Status would show here.'
+    : 'Saved as draft (demo): Upload to Inbox confirmed. In production this calls Content Posting API with video.upload and returns a draft to finish in TikTok.';
+  $('statusLine').textContent='Status: Published / saved — see Publishing status above.';
+});
+$('draftBtn').addEventListener('click', ()=>{
+  $('mode').value='UPLOAD_TO_INBOX'; updatePublishState();
+  $('statusBox').textContent='Saved as draft (demo): Upload to Inbox. In production this saves the video as a draft in TikTok to finish in the app.';
+});
+updatePublishState();
+</script>
+</body>
+</html>
